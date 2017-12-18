@@ -24,6 +24,10 @@ void MainWindow::paintEvent(QPaintEvent *e)
    int i=0,j=0;
 QPainter painter(this);
 painter.setPen(QPen(Qt::red, 5));
+
+int revise_x,revies_y;
+revise_x=zoom_center_x;
+
 for(i=1;i<=max_x;i++)
 {
    painter.drawLine(i*zoom,0,i*zoom,windowsize_y);
