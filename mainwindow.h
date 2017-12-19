@@ -5,7 +5,8 @@
 #include <QPainter>
 #include <QWheelEvent>
 
-namespace Ui {
+namespace Ui
+{
 class MainWindow;
 }
 
@@ -16,9 +17,14 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-    protected:
+    void count_value(int player,int x,int y);
+    void ai_place(int player);
+protected:
     void paintEvent(QPaintEvent *e);
     void wheelEvent(QWheelEvent *e);
+    void mousePressEvent(QMouseEvent *);
+    void mouseMoveEvent(QMouseEvent *);
+    void mouseReleaseEvent(QMouseEvent *);
 
 private:
     Ui::MainWindow *ui;
