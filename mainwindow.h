@@ -24,8 +24,8 @@ public:
     void judge7(int *value);
     void judge8(int *value);
     void judge9(int *value);
-    void chess_center(int *value_x, int *value_y);
-    int ai_place(int player, int layer,int max_value[]);
+    int chess_center(int x, int y);
+    int ai_place(int player, int layer, int *alpha, int *beta, int is_first_node, int max_layer);
 protected:
     void paintEvent(QPaintEvent *e);
     void wheelEvent(QWheelEvent *e);

@@ -3,10 +3,11 @@
 #define max_x 11
 #define max_y 11
 #define windowsize_x 1200
-#define windowsize_y 800
+#define windowsize_y 750
 int zoom = 45;
 
-int time_count=1;
+int alpha_count=0;
+int beta_count=0;
 int zoom_center_x = 0;
 int zoom_center_y = 0;
 int zoom_revise_x = 0;
@@ -18,7 +19,7 @@ int ai_x1;
 int ai_x2;
 int ai_y1;
 int ai_y2;
-int board[max_x][max_y];
+int board[max_x+1][max_y+1];
 int total_chess=0;
 int condition=1;
 int left_chess=1;
@@ -38,26 +39,30 @@ MainWindow::MainWindow(QWidget *parent) :
     }
 
     /*
-            board[3][3]=2;
-            board[3][4]=2;
-            board[4][5]=2;
-            board[4][4]=1;
-            board[5][5]=1;
-            board[6][6]=1;
+                board[3][3]=2;
+                board[3][4]=2;
+                board[4][5]=2;
+                board[4][4]=1;
+                board[5][5]=1;
+                board[6][6]=1;
 
-            board[5][6]=1;
+                board[5][6]=1;
 
-            board[5][7]=1;
-            board[6][7]=1;
-            board[7][7]=1;*/
+                board[5][7]=1;
+                board[6][7]=1;
+                board[7][7]=1;
+
+                board[2][10]=1;*/
 
 
     /*
-            board[9][11]=1;
-            board[10][11]=1;
+                board[9][11]=1;
+                board[10][11]=1;
 
-            board[11][11]=1;
-            board[10][10]=1;*/
+                board[11][11]=1;
+                board[10][10]=1;*/
+
+
     /*
             int x=0,y=0;
             chess_center(&x,&y);
@@ -65,8 +70,11 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /*
         int value[3]={0};
-        count_value(value);
-        printf("p1:%d , p2:%d\n",value[1],value[2]);
+        count_value(value);*/
+    /*
+        int v_max_x=0,v_min_x=0, v_max_y=0, v_min_y=0;
+        chess_center(&v_max_x,&v_min_x,&v_max_y,&v_min_y);
+        printf("max_x:%d min_x:%d max_y:%d min_y:%d\n",v_max_x,v_min_x,v_max_y,v_min_y);
         fflush(stdout);*/
 }
 
@@ -75,27 +83,24 @@ MainWindow::~MainWindow()
 {
     delete ui;
 }
-void MainWindow::chess_center(int *value_x,int *value_y)
+int MainWindow::chess_center(int x,int y)
 {
     int i,j;
-    int count=0;
-    *value_x=0;
-    *value_y=0;
-    for(i=1; i<=max_x; i++)
+    int temp_x;
+    int temp_y;
+    for(i=-2; i<=2; i++)
     {
-        for(j=1; j<=max_y; j++)
+        for(j=-2; j<=2; j++)
         {
-            if(board[i][j]!=0)
+            temp_x=x+i;
+            temp_y=y+j;
+            if(temp_x>=1&&temp_x<=max_x&&temp_y<=max_y&&temp_y>=1&&board[temp_x][temp_y]!=0)
             {
-                count++;
-                *value_x+=i;
-                *value_y+=j;
+                return 1;
             }
         }
     }
-    *value_x/=count;
-    *value_y/=count;
-    return ;
+    return 0;
 }
 int MainWindow::judge_value(int t, int flag, int space)
 {
@@ -105,11 +110,11 @@ int MainWindow::judge_value(int t, int flag, int space)
                       ,100,70,10
                       ,1000,150,40
                       ,3000,1500,80
-                      ,1000000,1000000,1000000
+                      ,100000,100000,100000
                      };
     if(t>=6)
     {
-        return 1000000;
+        return 100000;
     }
     float space_coeff=1.0;/*
     if(space>=4)
@@ -496,43 +501,34 @@ void MainWindow::count_value(int *value)
     //fflush(stdout);
     judge9(value);
 }
-int MainWindow::ai_place(int player,int layer,int max_value[])
+int MainWindow::ai_place(int player, int layer, int *alpha, int *beta,int is_first_node, int max_layer)
 {
-    int i,j,k,l;
-    int local_score=0;
-    int temp=0;
-    if(layer==2)
+    int local_minscore=0;
+    int local_maxscore=0;
+    int local_minscore_first_flag=1;
+    int local_maxscore_first_flag=1;
+    if(layer==max_layer)
     {
         int value[3]= {0};
         count_value(value);
-        local_score=value[2]-value[1];
-        /*
-        if(layer%2==1&&(value[2]-value[1]>local_score||local_score==0))
-        {
-            local_score=value[2]-value[1];
-        }
-        if(layer%2==0&&(value[2]-value[1]<local_score||local_score==0))
-        {
-            local_score=value[2]-value[1];
-        }*/
-        return local_score;
+        return value[2]-value[1];
     }
 
+    int i,j,k,l;
+    int local_is_first_node=is_first_node;
+    int local_alpha_first_flag=1;
+    int local_beta_first_flag=1;
 
     for(i=1; i<=max_x; i++)
     {
         for(j=1; j<=max_y; j++)
         {
+            if(!chess_center(i,j))
+            {
+                continue;
+            }
             if(board[i][j]==0)
             {
-                /*
-                int x=0,y=0;
-                chess_center(&x,&y);
-                if(abs(i-x)>=2+total_chess/2||abs(j-y)>=2+total_chess/2)
-                {
-                    continue;
-                }*/
-
                 for(k=i; k<=max_x; k++)
                 {
                     if(k!=i)
@@ -545,6 +541,7 @@ int MainWindow::ai_place(int player,int layer,int max_value[])
                     }
                     for(; l<=max_y; l++)
                     {
+
                         if(board[k][l]==0)//empty
                         {
                             if(i==k&&j==l)
@@ -553,75 +550,150 @@ int MainWindow::ai_place(int player,int layer,int max_value[])
                             }
                             else
                             {
-                                /*
-                                       int x2=0,y2=0;
-                                       chess_center(&x2,&y2);
-                                       if(abs(k-x2)>=2+total_chess/2||abs(l-y2)>=2+total_chess/2)
-                                       {
-                                           continue;
-                                       }*/
 
+                                if(!chess_center(k,l))
+                                {
+                                    continue;
+                                }
                                 board[i][j]=player;
                                 board[k][l]=player;
 
-
-                                if(layer<2)
+                                int temp=0;/*
+                                if(layer%2==1&&layer<=max_layer-2)
+                                {
+                                    local_beta_first_flag=0;
+                                    *beta=0;
+                                    //printf("@@beta\n");
+                                    //fflush(stdout);
+                                }*/
+                                if(layer%2==0&&layer<=max_layer-2&&local_alpha_first_flag==1)
+                                {
+                                    local_alpha_first_flag=0;
+                                    *alpha=0;/*
+                                    printf("@@alpha\n");
+                                    fflush(stdout);*/
+                                }
+                                if(layer<max_layer)
                                 {
                                     if(player==1)
                                     {
-                                        temp=ai_place(2,layer+1,max_value);
+                                        temp=ai_place(2,layer+1,alpha,beta,is_first_node,max_layer);
                                     }
                                     else
                                     {
-                                        temp=ai_place(1,layer+1,max_value);
+                                        temp=ai_place(1,layer+1,alpha,beta,is_first_node,max_layer);
                                     }
-                                    if (layer%2==1&&(temp<local_score||local_score==0))
+                                    if(temp==-1)
                                     {
-                                        local_score=temp;
-                                        if(layer==1)
-                                        {
-                                            ai_x1=i;
-                                            ai_y1=j;
-                                            ai_x2=k;
-                                            ai_y2=l;
-                                            printf("score%d max: x1:%d y1:%d x2:%d y2:%d ",local_score,ai_x1,ai_y1,ai_x2,ai_y2);
-                                            //printf("local x1:%d y1:%d x2:%d y2:%d\n",i,j,k,l);
-                                            fflush(stdout);
+                                        board[i][j]=0;
+                                        board[k][l]=0;
+                                        continue;
+                                    }
+                                    is_first_node=0;
+                                }
 
-                                        }
-                                    }
-                                    else if(layer%2==0&&(temp<local_score||local_score==0))
+                                if (local_is_first_node==1&&layer%2==1)
+                                {
+                                    if(*alpha>temp||*alpha==0)
                                     {
-                                        local_score=temp;
+                                        *alpha=temp;
+                                    }
+                                }/*
+                                else if(local_is_first_node==1&&layer%2==0)
+                                {
+                                    if(*beta<temp||*beta==0)
+                                    {
+                                        *beta=temp;
+                                    }
+                                    //printf("beta:%d temp:%d\n",*beta,temp);
+                                    //fflush(stdout);
+                                }*/
+
+
+                                else if(local_is_first_node==0&&layer%2==1)
+                                {
+                                    //alpha cut
+                                    if(*alpha>temp&&*alpha!=0)
+                                    {
+                                        alpha_count++;
+                                        board[i][j]=0;
+                                        board[k][l]=0;
+                                        return -1;
                                     }
                                 }
-                                /*
+                                else if(local_is_first_node==0&&layer%2==0)
+                                {
+                                    //beta cut
+                                    if(*beta<temp&&*beta!=0)
+                                    {
+
+                                        beta_count++;
+                                        board[i][j]=0;
+                                        board[k][l]=0;
+                                        return -1;
+                                    }
+                                }
+
                                 if(layer==1)
                                 {
-                                    //int t=0;
-                                    //t=time.elapsed();
-                                    //time_count++;
-                                    //printf("t:%d speed:%f ",,t,time_count*1000.0/t);
-                                    printf("score%d max: x1:%d y1:%d x2:%d y2:%d ",local_score,ai_x1,ai_y1,ai_x2,ai_y2,i,j,k,l);
-                                    printf("local x1:%d y1:%d x2:%d y2:%d\n",i,j,k,l);
-                                    fflush(stdout);
-                                }*/
+                                    //printf("x1:%d y1:%d x2:%d y2:%d temp:%d\n",i,j,k,l,temp);
+                                    //fflush(stdout);
+                                }
+                                if(temp>local_maxscore||local_maxscore_first_flag)
+                                {
+                                    local_maxscore_first_flag=0;
+                                    local_maxscore=temp;
+                                    if(layer==0)
+                                    {
+                                        //printf("@@max:%d temp:%d\n",local_maxscore, temp);
+                                        //fflush(stdout);
+                                        ai_x1=i;
+                                        ai_y1=j;
+                                        ai_x2=k;
+                                        ai_y2=l;
+                                    }
+                                }
+                                if(temp<local_minscore||local_minscore_first_flag)
+                                {
+                                    local_minscore_first_flag=0;
+                                    local_minscore=temp;
+                                }
                                 board[i][j]=0;
                                 board[k][l]=0;
                             }
                         }
                     }
                 }
-                /*
-                                if(max_value[1]<local_score)
-                                {
-                                    max_value[1]=local_score;
-                                }*/
+            }
+            if(layer==0)
+            {
+                int t=time.elapsed();
+                printf("t:%6.2f alpha:%d beta:%d ",t/1000.0,alpha_count,beta_count);
+                printf("max: x1:%d y1:%d x2:%d y2:%d ",ai_x1,ai_y1,ai_x2,ai_y2);
+                printf("local x:%d y:%d\n",i,j);
+                fflush(stdout);
             }
         }
     }
 
-    return local_score;
+    if(layer%2==0&&local_is_first_node==0)
+    {
+        if(*beta>local_maxscore&&*beta!=0)
+        {
+            *beta=local_maxscore;
+        }
+    }
+
+
+
+    if(layer%2==0)
+    {
+        return local_maxscore;
+    }
+    else
+    {
+        return local_minscore;
+    }
 }
 void MainWindow::paintEvent(QPaintEvent *e)
 {
@@ -661,7 +733,7 @@ void MainWindow::paintEvent(QPaintEvent *e)
             }
         }
     }
-    painter.setPen(QPen(Qt::yellow, zoom*3/5));
+    painter.setPen(QPen(Qt::magenta, zoom*3/5));
     for (i = 1; i <= max_x; i++)
     {
         for (j = 1; j <= max_y; j++)
@@ -715,11 +787,13 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
             if(left_chess<=0)
             {
                 condition=2;
-                int max_value[3]= {0};
                 time.start();
-                ai_place(2,1,max_value);
+                int alpha=0,beta=0;
+                alpha_count=0;
+                beta_count=0;
+                ai_place(2,0,&alpha,&beta,1,2);
 
-                printf("x1:%d y1:%d x2:%d y2:%d",ai_x1,ai_y1,ai_x2,ai_y2);
+                printf("x1:%d y1:%d x2:%d y2:%d\n",ai_x1,ai_y1,ai_x2,ai_y2);
                 fflush(stdout);
                 board[ai_x1][ai_y1]=2;
                 board[ai_x2][ai_y2]=2;
@@ -729,11 +803,23 @@ void MainWindow::mousePressEvent(QMouseEvent *e)
                 total_chess+=2;
                 left_chess=2;
                 condition=1;
-                printf("P1");
+                printf("P1\n");
                 fflush(stdout);
-
-
+            }/*
+            int i,j;
+            for(i=1;i<=max_x;i++)
+            {
+                for(j=1;j<=max_y;j++)
+                {
+                    printf("%d ",board[i][j]);
+                }
+                printf("\n");
             }
+            int v_max_x=0,v_min_x=0, v_max_y=0, v_min_y=0;
+            chess_center(&v_max_x,&v_min_x,&v_max_y,&v_min_y);
+            printf("max_x:%d min_x:%d max_y:%d min_y:%d\n",v_max_x,v_min_x,v_max_y,v_min_y);
+
+            fflush(stdout);*/
         }
     }
 }
